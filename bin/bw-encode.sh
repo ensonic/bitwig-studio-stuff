@@ -1,17 +1,6 @@
 #!/bin/bash
-#
-# sample invocation:
-# cd "$HOME/Bitwig Studio/Projects"
-# find . -type d -a -name exported
-# for d in 20200222.NyanGooseHonk/exported/*; do ~/bin/bw-encode.sh $d/Master.wav; done
-#
-# verify tags:
-# gst-launch-1.0 -t \
-#   filesrc location=20200222.NyanGooseHonk/exported/20200222/NyanGooseHonk.ogg ! \
-#   parsebin ! fakesink
-#
 
-# eg. "20200222.NyanGooseHonk/exported/20200222/Master.wav"
+# eg. "<project-dir>/exported/<date>/Master.wav"
 input="$1"
 
 dir=$(dirname "${input}")

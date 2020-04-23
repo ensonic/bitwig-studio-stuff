@@ -32,8 +32,8 @@ Sample invocation:
 
 ```shell
 cd "$HOME/Bitwig Studio/Projects"
-find . -type d -a -name exported
-for d in <project-dir>/exported/*; do bw-encode.sh $d/Master.wav; done
+find . -type f -a -name Master.wav
+for f in $(find . -type f -a -name Master.wav); do bw-encode.sh "$f"; done
 ```
 
 Verify metadata tags:

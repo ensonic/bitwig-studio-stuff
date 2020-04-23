@@ -32,7 +32,6 @@ Sample invocation:
 
 ```shell
 cd "$HOME/Bitwig Studio/Projects"
-find . -type f -a -name Master.wav
 for f in $(find . -type f -a -name Master.wav); do bw-encode.sh "$f"; done
 ```
 

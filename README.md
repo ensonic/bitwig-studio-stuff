@@ -6,7 +6,7 @@ installations, tools related to bitwig studio and my presets.
 
 ## Presets
 
-The esisest way to install the presets is to symlink the foilder.
+The esisest way to install the presets is to symlink the folder.
 
 ```shell
 ln -s $PWD/presets/ $HOME/Bitwig Studio/Library/Presets/Ensonic-Bitwig-Presets

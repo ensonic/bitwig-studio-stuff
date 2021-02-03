@@ -16,13 +16,14 @@ tags="title=${base},artist=ensonic,datetime=(datetime)${year}-${month}-${day}"
 
 if [ ! -f "${output}.${ds}.ogg" ]; then
   echo "encode: ${output}.${ds}.ogg"
+  # use quality setting
   gst-launch-1.0 -q \
     filesrc location="${input}" ! \
     wavparse ! \
     progressreport update-freq=1 ! \
     taginject tags="${tags}" ! \
     audioconvert ! \
-    vorbisenc ! oggmux ! \
+    vorbisenc quality=0.7 ! oggmux ! \
     filesink location="${output}.${ds}.ogg"
 fi
 if [ ! -f "${output}.${ds}.mp3" ]; then
@@ -33,7 +34,7 @@ if [ ! -f "${output}.${ds}.mp3" ]; then
     progressreport update-freq=1 ! \
     taginject tags="${tags}" ! \
     audioconvert ! \
-    lamemp3enc ! id3v2mux ! \
+    lamemp3enc target=bitrate bitrate=256 cbr=true encoding-engine-quality=high ! id3v2mux ! \
     filesink location="${output}.${ds}.mp3"
     
     #if [ -e "${prj_dir}/cover.jpg" ]; then
@@ -64,8 +65,9 @@ if [ ! -f "${output}.${ds}.mp4" -a -f "${prj_dir}/cover.jpg" ]; then
   #  x264enc ! queue ! mux.
     
   # https://superuser.com/questions/1041816/combine-one-image-one-audio-file-to-make-one-video-using-ffmpeg
+  # -c:v libx264 -tune stillimage
   ffmpeg -r 1 -loop 1 -i "${prj_dir}/cover.jpg" -i "${input}" \
-    -c:v libx264 -tune stillimage -pix_fmt yuv420p -vf scale=1280:720 \
+    -c:v vp9 -pix_fmt yuv420p -vf scale=1280:720 \
     -c:a aac -b:a 192k \
     -shortest \
     -metadata "title=${base}" \

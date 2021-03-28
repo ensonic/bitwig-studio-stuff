@@ -10,7 +10,8 @@ month=$(echo ${ds} | cut -c5-6)
 day=$(echo ${ds} | cut -c7-8)
 base=$(echo "${dir}" | rev | cut -d'/' -f 3 | rev | cut -d'.' -f2)
 output="${dir}/${base}"
-prj_dir=$(dirname $(dirname "${dir}"))
+exp_dir=$(dirname "${dir}")
+prj_dir=$(dirname "${exp_dir}")
 
 tags="title=${base},artist=ensonic,datetime=(datetime)${year}-${month}-${day}"
 
@@ -25,6 +26,7 @@ if [ ! -f "${output}.${ds}.ogg" ]; then
     audioconvert ! \
     vorbisenc quality=0.7 ! oggmux ! \
     filesink location="${output}.${ds}.ogg"
+  ln -sf "${PWD}/${output}.${ds}.ogg" "${exp_dir}/${base}.ogg"
 fi
 if [ ! -f "${output}.${ds}.mp3" ]; then
   echo "encode: ${output}.${ds}.mp3"
@@ -37,12 +39,16 @@ if [ ! -f "${output}.${ds}.mp3" ]; then
     lamemp3enc target=bitrate bitrate=256 cbr=true encoding-engine-quality=high ! id3v2mux ! \
     filesink location="${output}.${ds}.mp3"
     
-    #if [ -e "${prj_dir}/cover.jpg" ]; then
-      # lame --ti "${prj_dir}/cover.jpg" "${output}.${ds}.mp3"
-      # TODO: nned to tmp mv the cur output
-      # ffmpeg -i input.mp3 -i "${prj_dir}/cover.jpg" -map_metadata 0 -map 0 -map 1 "${output}.${ds}.mp3"
-      # eyeD3 --add-image="${prj_dir}/cover.jpg":FRONT_COVER "${output}.${ds}.mp3"
-    #fi
+  if [ -e "${prj_dir}/cover.jpg" ]; then
+    tmpfile=$(mktemp /tmp/bw-enc.XXXXXX.mp3)
+    mv "${output}.${ds}.mp3" "${tmpfile}"
+    ffmpeg -i "${tmpfile}" -i "${prj_dir}/cover.jpg" -map_metadata 0 -map 0 -map 1 "${output}.${ds}.mp3"
+    rm "${tmpfile}"
+    # Alternatives:
+    # lame --ti "${prj_dir}/cover.jpg" "${output}.${ds}.mp3"
+    # eyeD3 --add-image="${prj_dir}/cover.jpg":FRONT_COVER "${output}.${ds}.mp3"
+  fi
+  ln -sf "${PWD}/${output}.${ds}.mp3" "${exp_dir}/${base}.mp3"
 fi
 if [ ! -f "${output}.${ds}.mp4" -a -f "${prj_dir}/cover.jpg" ]; then
   echo "encode: ${output}.${ds}.mp4"
@@ -66,13 +72,16 @@ if [ ! -f "${output}.${ds}.mp4" -a -f "${prj_dir}/cover.jpg" ]; then
     
   # https://superuser.com/questions/1041816/combine-one-image-one-audio-file-to-make-one-video-using-ffmpeg
   # -c:v libx264 -tune stillimage
+  #
+  # previously used: scale=1280:720, but the black borders are ugly
   ffmpeg -r 1 -loop 1 -i "${prj_dir}/cover.jpg" -i "${input}" \
-    -c:v vp9 -pix_fmt yuv420p -vf scale=1280:720 \
+    -c:v vp9 -pix_fmt yuv420p -vf scale=750:750 \
     -c:a aac -b:a 192k \
     -shortest \
     -metadata "title=${base}" \
     -metadata "author=ensonic" \
     -metadata "year=${year}" \
     "${output}.${ds}.mp4"
+  ln -sf "${PWD}/${output}.${ds}.mp4" "${exp_dir}/${base}.mp4"
 fi
 

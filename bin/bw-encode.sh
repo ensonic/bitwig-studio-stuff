@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# * since bws 4.0 it won't create 'exported' anymore
+# * we would also default to ~/Music/<Artist>/<Album>/<Track>.<fmt>
+# * we could let bws do the encoding and only add album-art and create the mp4
+
 # eg. "<project-dir>/exported/<date>/Master.wav"
 input="$1"
 
@@ -26,6 +30,14 @@ if [ ! -f "${output}.${ds}.ogg" ]; then
     audioconvert ! \
     vorbisenc quality=0.7 ! oggmux ! \
     filesink location="${output}.${ds}.ogg"
+  #if [ -e "${prj_dir}/cover.jpg" ]; then
+  #  tmpfile=$(mktemp /tmp/bw-enc.XXXXXX.ogg)
+  #  mv "${output}.${ds}.ogg" "${tmpfile}"
+  #  # This makes it a video :/
+  #  ffmpeg -i "${tmpfile}" -f jpeg_pipe -i "${prj_dir}/cover.jpg" \
+  #    "${output}.${ds}.ogg"
+  #  rm "${tmpfile}"
+  #fi
   ln -sf "${PWD}/${output}.${ds}.ogg" "${exp_dir}/${base}.ogg"
 fi
 if [ ! -f "${output}.${ds}.mp3" ]; then
@@ -42,7 +54,10 @@ if [ ! -f "${output}.${ds}.mp3" ]; then
   if [ -e "${prj_dir}/cover.jpg" ]; then
     tmpfile=$(mktemp /tmp/bw-enc.XXXXXX.mp3)
     mv "${output}.${ds}.mp3" "${tmpfile}"
-    ffmpeg -i "${tmpfile}" -i "${prj_dir}/cover.jpg" -map_metadata 0 -map 0 -map 1 "${output}.${ds}.mp3"
+    ffmpeg -i "${tmpfile}" -f jpeg_pipe -i "${prj_dir}/cover.jpg" \
+      -map_metadata 0 -map 0 -map 1 -c copy \
+      -metadata:s:v comment="Cover (front)" \
+      "${output}.${ds}.mp3"
     rm "${tmpfile}"
     # Alternatives:
     # lame --ti "${prj_dir}/cover.jpg" "${output}.${ds}.mp3"
@@ -73,14 +88,17 @@ if [ ! -f "${output}.${ds}.mp4" -a -f "${prj_dir}/cover.jpg" ]; then
   # https://superuser.com/questions/1041816/combine-one-image-one-audio-file-to-make-one-video-using-ffmpeg
   # -c:v libx264 -tune stillimage
   #
+  # video too long: https://trac.ffmpeg.org/ticket/5456
+  #
   # previously used: scale=1280:720, but the black borders are ugly
   ffmpeg -r 1 -loop 1 -i "${prj_dir}/cover.jpg" -i "${input}" \
-    -c:v vp9 -pix_fmt yuv420p -vf scale=750:750 \
     -c:a aac -b:a 192k \
-    -shortest \
+    -r 1 -shortest \
+    -c:v vp9 -pix_fmt yuv420p -vf scale=750:750 \
     -metadata "title=${base}" \
     -metadata "author=ensonic" \
     -metadata "year=${year}" \
+    -fflags +shortest -max_interleave_delta 500M \
     "${output}.${ds}.mp4"
   ln -sf "${PWD}/${output}.${ds}.mp4" "${exp_dir}/${base}.mp4"
 fi
